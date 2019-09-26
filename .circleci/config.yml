@@ -1,3 +1,8 @@
+version: 2.1
+
+orbs:
+  sonar-scanner: nodis-com-br/sonar-scanner@0.1.0
+
 workflows:
   version: 2
   main:
@@ -16,8 +21,11 @@ workflows:
               ignore: /.*/
             tags:
               only: /^v\p{Digit}+\.\p{Digit}+.*/
-
-version: 2
+      - static-analysis:
+          steps:
+            - sonar-scanner:
+                host_url: https://sonarqube.p4.greenpeace.org
+                organization: greenpeace-org
 
 job-references:
   mysql_image: &mysql_image
@@ -86,7 +94,7 @@ jobs:
   build-and-test-codeception:
     docker:
       - image: greenpeaceinternational/p4-builder:latest
-    working_directory:  /home/circleci/
+    working_directory: /home/circleci/
     environment:
       APP_HOSTNAME: www.planet4.test
       APP_HOSTPATH:
