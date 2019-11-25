@@ -2,10 +2,16 @@
 
 // Search page.
 export const setupSearch = function($) {
-  const $search_form      = $( '#search_form' );
-  const $load_more_button = $( '.btn-load-more-click-scroll' );
-  let load_more_count   = 0;
-  let loaded_more       = false;
+  const $search_form            = $( '#search_form' );
+  const $load_more_button       = $( '.btn-load-more-click-scroll' );
+  const $load_archive_button    = $( '.btn-load-archive-click-scroll' );
+  let show_load_archive_page    = $load_archive_button.data('showAfterPage');
+  let load_more_count           = 0;
+  let current_page              = 1;
+  let total_posts               = 0;
+  let initial_load_archive_page = 0;
+  let loaded_more               = false;
+  let loaded_archive            = false;
 
   $( '#search-type button' ).click(function() {
     $( '#search-type button' ).removeClass( 'active' );
@@ -84,20 +90,23 @@ export const setupSearch = function($) {
   $load_more_button.off( 'click' ).on( 'click', function() {
     // If this button has this class then Lazy-loading is enabled.
     if ( $(this).hasClass( 'btn-load-more-async' ) ) {
-      const total_posts    = $(this).data('total_posts');
+      total_posts    = $(this).data('total_posts');
       const posts_per_load = $(this).data('posts_per_load');
-      const next_page      = $(this).data( 'current_page' ) + 1;
+      const next_page      = current_page + 1;
+      current_page         = next_page;
       $(this).data( 'current_page', next_page );
 
       $.ajax({
         url: localizations.ajaxurl,
         type: 'GET',
         data: {
-          action:          'get_paged_posts',
-          'search-action': 'get_paged_posts',
-          'search_query':  $( '#search_input' ).val().trim(),
-          'paged':         next_page,
-          'query-string':  decodeURIComponent( location.search ).substr( 1 ) // Ignore the ? in the search url (first char).
+          action:                      'get_paged_posts',
+          'search-action':             'get_paged_posts',
+          'search_query':               $( '#search_input' ).val().trim(),
+          'total_posts':                total_posts,
+          'initial_load_archive_page':  initial_load_archive_page,
+          'paged':                      next_page,
+          'query-string':               decodeURIComponent( location.search ).substr( 1 ) // Ignore the ? in the search url (first char).
         },
         dataType: 'html'
       }).done(function ( response ) {
@@ -107,6 +116,7 @@ export const setupSearch = function($) {
         if (posts_per_load * next_page > total_posts) {
           $load_more_button.hide();
         }
+        checkShowLoadArchive( next_page );
       }).fail(function ( jqXHR, textStatus, errorThrown ) {
         console.log(errorThrown); //eslint-disable-line no-console
       });
@@ -119,6 +129,50 @@ export const setupSearch = function($) {
       $row.first().show( 'fast' ).removeClass( 'row-hidden' );
     }
   });
+
+  $load_archive_button.off( 'click' ).on( 'click', function() {
+    loaded_archive = true;
+    const next_page = current_page + 1;
+    initial_load_archive_page = current_page;
+    current_page    = next_page;
+    $(this).data('current_page', next_page);
+
+    $.ajax({
+      url: localizations.ajaxurl,
+      type: 'GET',
+      data: {
+        action: 'get_paged_posts',
+        'search-action':              'get_archived_posts',
+        'search_query':               $('#search_input').val().trim(),
+        'initial_load_archive_page':  initial_load_archive_page,
+        'total_posts':                total_posts,
+        'paged':                      next_page,
+        'query-string':               decodeURIComponent(location.search).substr(1) // Ignore the ? in the search url (first char).
+      },
+      dataType: 'html'
+    }).done(function (response) {
+      // Append the response at the bottom of the results and then show it.
+      $('.multiple-search-result .list-unstyled').append(response);
+      $('.row-hidden:last').removeClass('row-hidden').show('fast');
+      $load_archive_button.hide();
+    }).fail(function (jqXHR, textStatus, errorThrown) {
+      console.log(errorThrown); //eslint-disable-line no-console
+    });
+  });
+
+  const checkShowLoadArchive = ( current_page = 1 ) => {
+    if ( loaded_archive ) {
+      return;
+    }
+
+    if ( current_page >= show_load_archive_page ) {
+      $load_archive_button.show();
+    } else {
+      $load_archive_button.hide();
+    }
+  };
+
+  checkShowLoadArchive();
 
   // Reveal more results just by scrolling down the first 'show_scroll_times' times.
   $( window ).scroll(function() {
@@ -133,8 +187,8 @@ export const setupSearch = function($) {
         // If next page has not loaded then load next page as soon as scrolling
         // reaches 'load_earlier_offset' pixels before the Load more button.
         if ( ! loaded_more
-            && window_scroll > ( element_top + element_height - window_height - load_earlier_offset )
-            && ( ( load_more_count + 1 ) * $load_more_button.data('posts_per_load') ) < $load_more_button.data('total_posts' ) ) {
+          && window_scroll > ( element_top + element_height - window_height - load_earlier_offset )
+          && ( ( load_more_count + 1 ) * $load_more_button.data('posts_per_load') ) < $load_more_button.data('total_posts' ) ) {
 
           load_more_count++;
           $load_more_button.click();

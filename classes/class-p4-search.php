@@ -18,6 +18,8 @@ if ( ! class_exists( 'P4_Search' ) ) {
 		const POSTS_LIMIT           = 300;
 		const POSTS_PER_PAGE        = 10;
 		const POSTS_PER_LOAD        = 5;
+		const ARCHIVES_PER_LOAD     = 2;
+		const PAGES_BEFORE_ARCHIVE  = 5;
 		const SHOW_SCROLL_TIMES     = 2;
 		const DEFAULT_SORT          = '_score';
 		const DEFAULT_MIN_WEIGHT    = 1;
@@ -170,64 +172,140 @@ if ( ! class_exists( 'P4_Search' ) ) {
 		public function get_paged_posts() {
 			// If this is an ajax call.
 			if ( wp_doing_ajax() ) {
-				$search_action = filter_input( INPUT_GET, 'search-action', FILTER_SANITIZE_STRING );
-				$paged         = filter_input( INPUT_GET, 'paged', FILTER_SANITIZE_STRING );
 
-				// Check if call action is correct.
+				$search_action              = filter_input( INPUT_GET, 'search-action', FILTER_SANITIZE_STRING );
+				$paged                      = filter_input( INPUT_GET, 'paged', FILTER_SANITIZE_STRING );
+				$total_posts                = filter_input(INPUT_GET, 'total_posts', FILTER_SANITIZE_STRING );
+				$initial_load_archive_page  = filter_input(INPUT_GET, 'initial_load_archive_page', FILTER_SANITIZE_STRING );
+
+				$search_async = new static();
+				$search_async->set_context( $search_async->context );
+				$search_async->search_query = urldecode( filter_input( INPUT_GET, 'search_query', FILTER_SANITIZE_STRING ) );
+
+				// Get the decoded url query string and then use it as key for redis.
+				$query_string_full = urldecode( filter_input( INPUT_SERVER, 'QUERY_STRING', FILTER_SANITIZE_STRING ) );
+				$query_string      = str_replace( '&query-string=', '', strstr( $query_string_full, '&query-string=' ) );
+
+				$group                      = 'search';
+				$subgroup                   = $search_async->search_query ? $search_async->search_query : 'all';
+				$search_async->current_page = $paged;
+
+				parse_str( $query_string, $filters_array );
+				$selected_sort    = $filters_array['orderby'] ?? self::DEFAULT_SORT;
+				$selected_filters = $filters_array['f'] ?? [];
+				$filters          = [];
+
+				// Handle submitted filter options.
+				if ( $selected_filters && is_array( $selected_filters ) ) {
+					foreach ( $selected_filters as $type => $filter_type ) {
+						foreach ( $filter_type as $name => $id ) {
+							$filters[ $type ][] = [
+								'id'   => $id,
+								'name' => $name,
+							];
+						}
+					}
+				}
+
+				// Validate user input (sort, filters, etc).
+				if ( $search_async->validate( $selected_sort, $filters, $search_async->context ) ) {
+					$search_async->selected_sort = $selected_sort;
+					$search_async->filters       = $filters;
+				}
+
+				// Check Object cache for stored key.
+				$cache_key_set = $search_async->prepare_keys_for_cache( urldecode( $query_string ), $group, $subgroup );
+				$search_async->check_cache( $cache_key_set->key, $cache_key_set->group );
+
+				// Set paged posts depending on call action
 				if ( 'get_paged_posts' === $search_action ) {
-					$search_async = new static();
-					$search_async->set_context( $search_async->context );
-					$search_async->search_query = urldecode( filter_input( INPUT_GET, 'search_query', FILTER_SANITIZE_STRING ) );
+					$search_async->set_paged_posts();
+				} else if ( 'get_archived_posts' === $search_action ) {
+					$search_async->set_archived_paged_posts( $total_posts, $initial_load_archive_page, $cache_key_set->key, $cache_key_set->group );
+				}
 
-					// Get the decoded url query string and then use it as key for redis.
-					$query_string_full = urldecode( filter_input( INPUT_SERVER, 'QUERY_STRING', FILTER_SANITIZE_STRING ) );
-					$query_string      = str_replace( '&query-string=', '', strstr( $query_string_full, '&query-string=' ) );
+				// If there are paged results then set their context and send them back to client.
+				if ( $search_async->paged_posts ) {
+					$search_async->set_results_context( $search_async->context );
+					$search_async->view_paged_posts();
+				}
 
-					$group                      = 'search';
-					$subgroup                   = $search_async->search_query ? $search_async->search_query : 'all';
-					$search_async->current_page = $paged;
+				wp_die();
+			}
+		}
 
-					parse_str( $query_string, $filters_array );
-					$selected_sort    = $filters_array['orderby'] ?? self::DEFAULT_SORT;
-					$selected_filters = $filters_array['f'] ?? [];
-					$filters          = [];
+		protected function set_paged_posts() {
+			// Check if there are results already in the cache else fallback to the primary database.
+			if ( $this->posts ) {
+				$this->paged_posts = array_slice( $this->posts, ( $this->current_page - 1 ) * self::POSTS_PER_LOAD, self::POSTS_PER_LOAD );
+			} else {
+				$this->paged_posts = $this->get_timber_posts( $this->current_page );
+			}
+		}
 
-					// Handle submitted filter options.
-					if ( $selected_filters && is_array( $selected_filters ) ) {
-						foreach ( $selected_filters as $type => $filter_type ) {
-							foreach ( $filter_type as $name => $id ) {
-								$filters[ $type ][] = [
-									'id'   => $id,
-									'name' => $name,
-								];
-							}
+		protected function set_archived_paged_posts( $total_posts, $initial_load_archive_page, $cache_key, $cache_group ) {
+
+			$archived_results = $this->get_archived_results( $this->search_query );
+
+			if ( $this->posts ) {
+
+				if ( ( ( $this->current_page - 1 ) * self::POSTS_PER_LOAD ) >= count( $this->posts ) ) {
+					array_merge( $this->posts, $archived_results );
+
+					$this->paged_posts = array_slice( $archived_results, 0, self::POSTS_PER_LOAD );
+				} else {
+
+					$num_live_results_left = count( $this->posts ) - ( ( $this->current_page - 1 ) * self::POSTS_PER_LOAD );
+					$is_archive_results_remaining = true;
+					$is_live_results_remaining = true;
+					$max_iterations = ceil(count( $this->posts ) / ( self::POSTS_PER_LOAD - self::ARCHIVES_PER_LOAD ) );
+					$index = 0;
+
+					while( $is_archive_results_remaining && $is_live_results_remaining ) {
+
+						$archive_results_to_add = array_slice( $archived_results, $index * self::ARCHIVES_PER_LOAD, self::ARCHIVES_PER_LOAD );
+
+						$offset = ( ( $this->current_page - 1 + $index++ ) * self::POSTS_PER_LOAD ) + ( self::POSTS_PER_LOAD - self::ARCHIVES_PER_LOAD );
+
+						array_splice($this->posts, $offset , 0, $archive_results_to_add );
+
+						if ( count( $archived_results ) <= $index * self::ARCHIVES_PER_LOAD ) {
+							$is_archive_results_remaining = false;
+						}
+
+						if ( $num_live_results_left <= $index * ( self::POSTS_PER_LOAD - self::ARCHIVES_PER_LOAD ) ) {
+							$is_live_results_remaining = false;
+						}
+
+						if ( !$is_live_results_remaining && !$is_archive_results_remaining ) {
+							break;
+						}
+
+						//Safety to break out of while loop
+						if ( $index > $max_iterations ) {
+							break;
 						}
 					}
 
-					// Validate user input (sort, filters, etc).
-					if ( $search_async->validate( $selected_sort, $filters, $search_async->context ) ) {
-						$search_async->selected_sort = $selected_sort;
-						$search_async->filters       = $filters;
+					if ( !$is_live_results_remaining && $is_archive_results_remaining ) {
+						array_merge( $this->posts, array_slice( $archived_results, $index * self::ARCHIVES_PER_LOAD ) );
 					}
 
-					// Check Object cache for stored key.
-					$cache_key_set = $search_async->prepare_keys_for_cache( urldecode( $query_string ), $group, $subgroup );
-					$search_async->check_cache( $cache_key_set->key, $cache_key_set->group );
-
-					// Check if there are results already in the cache else fallback to the primary database.
-					if ( $search_async->posts ) {
-						$search_async->paged_posts = array_slice( $search_async->posts, ( $search_async->current_page - 1 ) * self::POSTS_PER_LOAD, self::POSTS_PER_LOAD );
-					} else {
-						$search_async->paged_posts = $search_async->get_timber_posts( $search_async->current_page );
-					}
-
-					// If there are paged results then set their context and send them back to client.
-					if ( $search_async->paged_posts ) {
-						$search_async->set_results_context( $search_async->context );
-						$search_async->view_paged_posts();
-					}
+					$this->paged_posts = array_slice( $this->posts, ( $this->current_page - 1 ) * self::POSTS_PER_LOAD, self::POSTS_PER_LOAD );
 				}
-				wp_die();
+
+				//Re-add posts to cache because they now contain the archived results as well
+				wp_cache_replace( $cache_key, $this->posts, $cache_group, self::DEFAULT_CACHE_TTL );
+			} else {
+
+				//All posts have been loaded, show onle archived results
+				if ( ( ( $this->current_page - 1 ) * self::POSTS_PER_LOAD ) >= $total_posts ) {
+					$this->paged_posts = array_slice( $archived_results, ( ( $this->current_page - 1 ) - $initial_load_archive_page ) * self::POSTS_PER_LOAD );
+				} else {
+					$live_results = $this->get_timber_posts( $this->current_page );
+					$archived_results = array_slice( $archived_results, ( ( $this->current_page - 1 ) - $initial_load_archive_page ) * self::ARCHIVES_PER_LOAD );
+					$this->paged_posts = array_splice( $live_results, self::POSTS_PER_LOAD - self::ARCHIVES_PER_LOAD, self::ARCHIVES_PER_LOAD, $archived_results );
+				}
 			}
 		}
 
@@ -244,10 +322,109 @@ if ( ! class_exists( 'P4_Search' ) ) {
 			// If cache key expired then retrieve results once again and re-cache them.
 			if ( false === $this->posts ) {
 				$this->posts = $this->get_timber_posts();
+
 				if ( $this->posts ) {
 					wp_cache_add( $cache_key, $this->posts, $cache_group, self::DEFAULT_CACHE_TTL );
 				}
 			}
+		}
+
+		/**
+		 * Fetch search results from the archive and add them into the post results array.
+		 */
+		protected function get_archived_results( $search_query ) {
+
+			$search_query_parameter = empty( $search_query ) ? '' : "q=$search_query&";
+
+			/**
+			 * q = search query.
+			 * s = site.
+			 * h = hits per site (0 = all).
+			 * n = number of results. defaults to 10, so making it 100 should get enough.
+			 */
+			$archive_url = 'https://archive-it.org/search-master/opensearch?'.$search_query_parameter.'s=p3-raw.greenpeace.org&h=0&n=100';
+
+			$archive_url = 'https://archive-it.org/search-master/opensearch?q=climate&s=p3-raw.greenpeace.org&h=0&n=100';
+
+			$archive_response = wp_remote_get( $archive_url, array(
+				'timeout'     => 100
+			) );
+
+			$xml_archive_response_body = wp_remote_retrieve_body( $archive_response );
+
+			$response_body = new SimpleXMLElement( $xml_archive_response_body );
+
+			$filtered_results = $this->get_filtered_archived_results( $response_body );
+
+			if ( 0 == count( $filtered_results ) ) {
+				return;
+			}
+
+			$parsed_items = [];
+
+			foreach ( $filtered_results as $item ) {
+
+				$parsed_item            = (object) array();
+				$parsed_item->title     = (string) $item->title;
+				$parsed_item->link      = (string) $item->link;
+				$parsed_item->excerpt   = (string) $item->description;
+				$parsed_item->post_type = 'archive';
+
+				array_push($parsed_items, $parsed_item );
+			}
+
+			return $parsed_items;
+
+//			$archive_results_index = self::POSTS_PER_LOAD * 3; //Show arachived results on 3rd page.
+//
+//			if ( count( $this->posts ) > $archive_results_index ) {
+//				array_splice($this->posts, $archive_results_index, 0, $parsed_items );
+//			} else {
+//				array_push( $this->posts, ...$parsed_items );
+//			}
+		}
+
+		/**
+		 * Filter archived results by current domain.
+		 *
+		 * @param $results array of all results fetched from archive.
+		 *
+		 * @return array of archived results filtered by the current site.
+		 */
+		protected function get_filtered_archived_results( $results ) {
+			$full_url = explode('/', $_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'] );
+
+			if ( 'nl' == $full_url[1] ) {
+				$archive_ref = 'secured.greenpeace.nl';
+			} else if ( count($full_url) > 3 ) {
+				//Contains language in URL
+				$archive_ref = $full_url[1].'/'.$full_url[2];
+			} else if ( count($full_url) == 2 ) {
+				$archive_ref = '/'; //TODO: unknown sub-site so show all
+			} else {
+				$archive_ref = $full_url[1];
+			}
+
+			$archive_ref = '/'; //TODO: remove, test code
+
+			$filtered_items = [];
+
+			$results_count = 0;
+
+			$max_allowed_results = ceil( count( $this->posts ) * 0.2 ); //Archived results should only be 20% of normal results.
+
+			foreach ( $results->channel->item as $item ) {
+				if ( strpos((string) $item->link, $archive_ref ) !== false) {
+					array_push($filtered_items, $item );
+					$results_count++;
+				}
+
+				if ( $results_count > $max_allowed_results ) {
+					break;
+				}
+			}
+
+			return $filtered_items;
 		}
 
 		/**
@@ -294,7 +471,6 @@ if ( ! class_exists( 'P4_Search' ) ) {
 
 			// Set Engine Query arguments.
 			$this->set_engines_args( $args );
-
 			$posts = ( new WP_Query( $args ) )->posts;
 			return (array) $posts;
 		}
@@ -490,7 +666,7 @@ if ( ! class_exists( 'P4_Search' ) ) {
 
 			if ( $this->search_query ) {
 				$context['page_title'] = sprintf(
-					// translators: %1$d = Number of results.
+				// translators: %1$d = Number of results.
 					_n( '%1$d result for \'%2$s\'', '%1$d results for \'%2$s\'', $context['found_posts'], 'planet4-master-theme' ),
 					$context['found_posts'],
 					$this->search_query
@@ -747,7 +923,7 @@ if ( ! class_exists( 'P4_Search' ) ) {
 			$search_action = filter_input( INPUT_GET, 'search-action', FILTER_SANITIZE_STRING );
 
 			if ( ! is_admin() && is_search() ||
-				wp_doing_ajax() && ( 'get_paged_posts' === $search_action ) ) {
+			     wp_doing_ajax() && ( 'get_paged_posts' === $search_action ) ) {
 				$mime_types = implode( ',', self::DOCUMENT_TYPES );
 				$where     .= ' AND ' . $wpdb->posts . '.post_mime_type IN("' . $mime_types . '","") ';
 			}
@@ -789,11 +965,25 @@ if ( ! class_exists( 'P4_Search' ) ) {
 		 */
 		public function add_load_more( $args = null ) {
 			$this->context['load_more'] = $args ?? [
-				'posts_per_load' => self::POSTS_PER_LOAD,
+					'posts_per_load' => self::POSTS_PER_LOAD,
+					// Translators: %s = number of results per page.
+					'button_text'    => sprintf( __( 'SHOW %s MORE RESULTS', 'planet4-master-theme' ), self::POSTS_PER_LOAD ),
+					'async'          => true,
+				];
+		}
+
+		public function add_load_archive() {
+			$this->context['load_archive'] = [
+				'page_to_load_after' => $this->get_page_to_add_load_archive_after(),
 				// Translators: %s = number of results per page.
-				'button_text'    => sprintf( __( 'SHOW %s MORE RESULTS', 'planet4-master-theme' ), self::POSTS_PER_LOAD ),
+				'button_text'    => __( 'SHOW ARCHIVED RESULTS', 'planet4-master-theme' ),
 				'async'          => true,
 			];
+		}
+
+		protected function get_page_to_add_load_archive_after() {
+			$pages = ceil( count( $this->posts ) / self::POSTS_PER_LOAD );
+			return min( self::PAGES_BEFORE_ARCHIVE, $pages );
 		}
 
 		/**
