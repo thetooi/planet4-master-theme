@@ -90,10 +90,23 @@ if ( ! class_exists( 'P4_Post_Campaign' ) ) {
 				'menu_position'      => null,
 				'menu_icon'          => 'dashicons-megaphone',
 				'show_in_rest'       => true,
-				'supports'           => [ 'title', 'editor', 'author', 'thumbnail', 'excerpt', 'revisions' ],
+				'supports'           => [ 'title', 'editor', 'author', 'thumbnail', 'excerpt', 'revisions', 'custom-fields' ],
 			);
 
 			register_post_type( self::POST_TYPE, $args );
+
+			register_post_meta( self::POST_TYPE, 'campaign_logo', [
+					'show_in_rest' => true,
+					'type'         => 'string',
+					'single'       => true,
+				]
+			);
+			register_post_meta( self::POST_TYPE, 'campaign_nav_color', [
+					'show_in_rest' => true,
+					'type'         => 'string',
+					'single'       => true,
+				]
+			);
 		}
 
 		/**
@@ -247,17 +260,17 @@ if ( ! class_exists( 'P4_Post_Campaign' ) ) {
 					'show_names'   => true, // Show field names on the left.
 				]
 			);
-
-			$cmb->add_field(
-				[
-					'name'    => 'Logo',
-					'desc'    => 'Change the campaign logo',
-					'id'      => 'campaign_logo',
-					'type'    => 'select',
-					'default' => 'greenpeace',
-					'options' => $themes,
-				]
-			);
+//
+//			$cmb->add_field(
+//				[
+//					'name'    => 'Logo',
+//					'desc'    => 'Change the campaign logo',
+//					'id'      => 'campaign_logo',
+//					'type'    => 'select',
+//					'default' => 'greenpeace',
+//					'options' => $themes,
+//				]
+//			);
 
 			$cmb->add_field(
 				[
@@ -285,22 +298,22 @@ if ( ! class_exists( 'P4_Post_Campaign' ) ) {
 					'default' => 'planet4',
 				]
 			);
-
-			$cmb->add_field(
-				[
-					'name'       => __( 'Navigation Background Color', 'planet4-master-theme-backend' ),
-					'id'         => 'campaign_nav_color',
-					'type'       => 'colorpicker',
-					'classes'    => 'palette-only',
-					'attributes' => [
-						'data-colorpicker' => wp_json_encode(
-							[
-								'palettes' => $nav_palette,
-							]
-						),
-					],
-				]
-			);
+//
+//			$cmb->add_field(
+//				[
+//					'name'       => __( 'Navigation Background Color', 'planet4-master-theme-backend' ),
+//					'id'         => 'campaign_nav_color',
+//					'type'       => 'colorpicker',
+//					'classes'    => 'palette-only',
+//					'attributes' => [
+//						'data-colorpicker' => wp_json_encode(
+//							[
+//								'palettes' => $nav_palette,
+//							]
+//						),
+//					],
+//				]
+//			);
 
 			$cmb->add_field(
 				[
