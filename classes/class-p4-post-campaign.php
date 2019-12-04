@@ -95,12 +95,35 @@ if ( ! class_exists( 'P4_Post_Campaign' ) ) {
 
 			register_post_type( self::POST_TYPE, $args );
 
+			register_post_meta(self::POST_TYPE, 'campaign_page_template', [
+				'show_in_rest' => true,
+				'type'         => 'string',
+				'single'       => true,
+			]);
+
 			register_post_meta( self::POST_TYPE, 'campaign_logo', [
+					'show_in_rest' => true,
+					'type'         => 'string',
+					'single'       => true,
+					'default'      => 'greenpeace'
+				]
+			);
+
+			register_post_meta( self::POST_TYPE, 'campaign_logo_color', [
 					'show_in_rest' => true,
 					'type'         => 'string',
 					'single'       => true,
 				]
 			);
+
+			register_post_meta( self::POST_TYPE, 'campaign_nav_type', [
+					'show_in_rest' => true,
+					'type'         => 'string',
+					'single'       => true,
+					'default' => 'planet4'
+				]
+			);
+
 			register_post_meta( self::POST_TYPE, 'campaign_nav_color', [
 					'show_in_rest' => true,
 					'type'         => 'string',
@@ -272,33 +295,33 @@ if ( ! class_exists( 'P4_Post_Campaign' ) ) {
 //				]
 //			);
 
-			$cmb->add_field(
-				[
-					'name'    => 'Logo Color',
-					'desc'    => 'Change the campaign logo color (if not default)',
-					'id'      => 'campaign_logo_color',
-					'type'    => 'radio_inline',
-					'default' => 'light',
-					'options' => [
-						'light' => __( 'Light', 'planet4-master-theme-backend' ),
-						'dark'  => __( 'Dark', 'planet4-master-theme-backend' ),
-					],
-				]
-			);
-
-			$cmb->add_field(
-				[
-					'name'    => __( 'Navigation', 'planet4-master-theme-backend' ),
-					'id'      => 'campaign_nav_type',
-					'type'    => 'radio_inline',
-					'options' => [
-						'planet4' => __( 'Planet 4 Navigation', 'planet4-master-theme-backend' ),
-						'minimal' => __( 'Minimal Navigation', 'planet4-master-theme-backend' ),
-					],
-					'default' => 'planet4',
-				]
-			);
+//			$cmb->add_field(
+//				[
+//					'name'    => 'Logo Color',
+//					'desc'    => 'Change the campaign logo color (if not default)',
+//					'id'      => 'campaign_logo_color',
+//					'type'    => 'radio_inline',
+//					'default' => 'light',
+//					'options' => [
+//						'light' => __( 'Light', 'planet4-master-theme-backend' ),
+//						'dark'  => __( 'Dark', 'planet4-master-theme-backend' ),
+//					],
+//				]
+//			);
 //
+//			$cmb->add_field(
+//				[
+//					'name'    => __( 'Navigation', 'planet4-master-theme-backend' ),
+//					'id'      => 'campaign_nav_type',
+//					'type'    => 'radio_inline',
+//					'options' => [
+//						'planet4' => __( 'Planet 4 Navigation', 'planet4-master-theme-backend' ),
+//						'minimal' => __( 'Minimal Navigation', 'planet4-master-theme-backend' ),
+//					],
+//					'default' => 'planet4',
+//				]
+//			);
+
 //			$cmb->add_field(
 //				[
 //					'name'       => __( 'Navigation Background Color', 'planet4-master-theme-backend' ),
