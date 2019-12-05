@@ -255,12 +255,12 @@ if ( ! class_exists( 'P4_Settings' ) ) {
 					'id'   => 'campaigns_import_exclude_style',
 					'type' => 'checkbox',
 				],
-                [
-	                'name' => __( 'Include archived content in search results', 'planet4-master-theme-backend' ),
-	                'desc' => __( 'By enabling this option content from the archived P3 site will be included in P4 search results if users selects to include them.', 'planet4-master-theme-backend' ),
-	                'id'   => 'include_archive_content',
-	                'type' => 'checkbox',
-                ],
+				[
+					'name' => __( 'Include archived content in search results', 'planet4-master-theme-backend' ),
+					'desc' => __( 'By enabling this option content from the archived P3 site will be included in P4 search results if users selects to include them.', 'planet4-master-theme-backend' ),
+					'id'   => 'include_archive_content',
+					'type' => 'checkbox',
+				],
 			];
 			$this->hooks();
 		}
