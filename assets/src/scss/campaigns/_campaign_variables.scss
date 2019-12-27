@@ -1,0 +1,72 @@
+// Not used yet, we need to figure out how to handle campaign defaults first.
+.single-campaign {
+  .navbar {
+    background-color: var(--nav-color) !important;
+  }
+
+  a {
+    color: var(--secondary-color) !important;
+  }
+
+  body, p {
+    font-family: var(--body-font) !important;
+  }
+
+  h1, h2, h3, h4, h5 {
+    color: var(--header-color) !important;
+    font-family: var(--header-primary-font) !important;
+    font-weight: var(--header-font-weight) !important;
+  }
+
+  .btn-primary {
+    background: var(--passive-button-color) !important;
+    border-color: var(--passive-button-color) !important;
+
+    &:hover {
+      background: var(--primary-color) !important;
+      border-color: var(--primary-color) !important;
+    }
+  }
+
+  .btn-secondary, .btn-action.cover-card-btn {
+    background: rgba(255, 255, 255, .75) !important;
+    border: 1px solid var(--secondary-color) !important;
+    color: var(--secondary-color) !important;
+
+    &:hover {
+      background: var(--secondary-color) !important;
+      border: 1px solid var(--secondary-color) !important;
+      color: white !important;
+    }
+  }
+
+  .cover-card:hover .cover-card-btn {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+  }
+
+  .site-footer {
+    background-color: var(--footer-color) !important;
+
+    a {
+      color: var(--footer-links-color) !important;
+    }
+
+    li {
+      color: var(--footer-links-color) !important;
+    }
+
+    .gp-year {
+      color: var(--footer-links-color) !important;
+      font-family: Roboto !important;
+    }
+
+    .copyright-text {
+      color: var(--footer-links-color) !important;
+    }
+  }
+
+  .site-footer_min .icon {
+    fill: var(--footer-links-color) !important;
+  }
+}

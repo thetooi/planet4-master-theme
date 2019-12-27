@@ -1,10 +1,10 @@
 {% set logo = custom_styles.campaign_logo %}
 {% set logo_color = custom_styles.campaign_logo_color %}
-{% if (logo) and (logo_color) %}
+{% if campaign_template %}
 	{% if logo == 'greenpeace' %}
 		<img src="{{ data_nav_bar.images }}gp-logo-{{ logo_color }}.svg" alt="Greenpeace">
 	{% else %}
-		<img src="{{ data_nav_bar.images }}{{ logo }}/logo-{{ logo_color }}.png" alt="Greenpeace">
+		<img src="{{ data_nav_bar.images }}{{ campaign_template }}/logo-{{ logo_color }}.png" alt="Greenpeace">
 	{% endif %}
 {% else %}
 	<img src="{{ data_nav_bar.images }}gp-logo.svg" alt="Greenpeace">

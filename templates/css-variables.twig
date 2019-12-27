@@ -1,0 +1,109 @@
+{#<script>#}
+{#	let cssVars = {{ css_vars|json_encode|raw }};#}
+{#	let root = document.documentElement;#}
+{#	for ( const name in cssVars ) {#}
+{#		const value = cssVars[ name ];#}
+{#		root.style.setProperty( `--${ name }`, value );#}
+{#	}#}
+{#</script>#}
+
+{# As a first step use a twig template to set css variables instead of in PHP so that IDEs can have syntax color.
+
+I first incorporated css variables in the current PR (that migrates custom metaboxes to frontend components). However
+there is too much potential for things to break because of how CSS variables work: an undefined value will break the
+rule, causing it to fallback on CSS defaults, instead of letting another rule apply. It is not possible to apply css
+rules of the variable only if the variable is defined, which is the way some of the campaign variables currently work.
+
+It is also not possible to provide a single value as a fallback, as the fallback values differ across different campaign
+templates.
+
+So we need to transform those rules into fallbacks in a separate PR. An additional complexity is that a polyfill is
+needed for IE. #}
+<style>
+	{% if css_vars['nav-color'] %}
+		.navbar {
+			background-color: {{ css_vars['nav-color'] }} !important;
+		}
+	{% endif %}
+
+	{% if css_vars['footer-color'] %}
+		.site-footer {
+			background-color: {{ css_vars['footer-color'] }} !important;
+		}
+	{% endif %}
+
+	{# footer-links-color is always set. #}
+	.site-footer a,
+	.site-footer li,
+	.site-footer .gp-year,
+	.site-footer .copyright-text {
+		color: {{ css_vars['footer-links-color'] }} !important;
+	}
+
+	.site-footer .gp-year {
+		font-family: Roboto !important;
+	}
+
+	.site-footer_min .icon {
+		fill: {{ css_vars['footer-links-color'] }} !important;
+	}
+
+	{% if css_vars['header-color'] %}
+		h1, h2, h3, h4, h5 {
+			color: {{ css_vars['header-color'] }} !important;
+		}
+	{% endif %}
+
+	{% if css_vars['header-primary-font'] %}
+		h1, h2, h3, h4, h5 {
+			font-family: {{ css_vars['header-primary-font'] }} !important;
+		}
+	{% endif %}
+
+	{% if css_vars['header-font-weight'] %}
+		h1, h2, h3, h4, h5 {
+			font-weight: {{ css_vars['header-font-weight'] }} !important;
+		}
+	{% endif %}
+
+	{% if css_vars['body-font'] %}
+		body, p {
+			font-family: {{ css_vars['body-font'] }} !important;
+		}
+	{% endif %}
+
+	{% if css_vars['primary-color'] %}
+		.btn-primary {
+			background: {{ css_vars['passive-button-color'] }} !important;
+			border-color: {{ css_vars['passive-button-color'] }} !important;
+		}
+
+		.btn-primary:hover {
+			background: {{ css_vars['primary-color'] }} !important;
+			border-color: {{ css_vars['primary-color'] }} !important;
+		}
+
+		.cover-card:hover .cover-card-btn {
+			background: {{ css_vars['primary-color'] }} !important;
+			border-color: {{ css_vars['primary-color'] }} !important;
+		}
+	{% endif %}
+
+	{% if css_vars['secondary-color'] %}
+		a {
+			color: {{ css_vars['secondary-color'] }} !important;
+		}
+
+		.btn-secondary, .btn-action.cover-card-btn {
+			background: rgba(255, 255, 255, .75) !important;
+			border: 1px solid {{ css_vars['secondary-color'] }} !important;
+			color: {{ css_vars['secondary-color'] }} !important;
+		}
+
+		.btn-secondary:hover, .btn-action.cover-card-btn:hover {
+			background: {{ css_vars['secondary-color'] }} !important;
+			border: 1px solid {{ css_vars['secondary-color'] }} !important;
+			color: white !important;
+		}
+	{% endif %}
+</style>
