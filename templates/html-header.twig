@@ -76,6 +76,9 @@
 	<link rel="shortcut icon" type="image/ico" href="{{ theme.uri }}/favicon.ico"/>
 	<link rel="dns-prefetch" href="//act.greenpeace.org">
 	{{ wp_head }}
+	{% if css_vars %}
+		{% include 'css-variables.twig' %}
+	{% endif %}
 	{% if custom_styles %}
 		<style type="text/css">
 			{% for style in custom_styles.css %}{{ style|raw }}{% endfor %}

@@ -1,0 +1,206 @@
+{
+	"id": "arctic",
+	"name": "Arctic",
+	"fields": [
+		{
+			"id": "campaign_logo",
+			"options": [
+				{
+					"value": "arctic",
+					"label": "Arctic"
+				},
+				{
+					"value": "greenpeace",
+					"label": "Greenpeace"
+				}
+			],
+			"default": "arctic"
+		},
+		{
+			"id": "campaign_logo_color",
+			"options": [
+				{
+					"value": "light",
+					"label": "Light"
+				},
+				{
+					"value": "dark",
+					"label": "Dark"
+				}
+			],
+			"default": "light"
+		},
+		{
+			"id": "campaign_nav_type",
+			"options": [
+				{
+					"value": "planet4",
+					"label": "Planet 4 Navigation"
+				},
+				{
+					"value": "minimal",
+					"label": "Minimal Navigation"
+				}
+			],
+			"default": "planet4"
+		},
+		{
+			"id": "campaign_nav_color",
+			"options": [
+				{ "color": "#FFFFFF" },
+				{ "color": "#E5E5E5" },
+				{ "color": "#66CC00" },
+				{ "color": "#32CA89" },
+				{ "color": "#1BB6D6" },
+				{ "color": "#22938D" },
+				{ "color": "#186A70" },
+				{ "color": "#043029" },
+				{ "color": "#093944" },
+				{ "color": "#042233" },
+				{ "color": "#1A1A1A" },
+				{ "color": "#1B4A1B" }
+			],
+			"default": "#FFFFFF"
+		},
+		{
+			"id": "campaign_header_color",
+			"options": [
+				{ "color": "#000000" },
+				{ "color": "#E5E5E5" },
+				{ "color": "#32CA89" },
+				{ "color": "#1BB6D6" },
+				{ "color": "#22938D" },
+				{ "color": "#186A70" },
+				{ "color": "#043029" },
+				{ "color": "#093944" },
+				{ "color": "#042233" },
+				{ "color": "#1A1A1A" }
+			],
+			"default": "#000000"
+		},
+		{
+			"id": "campaign_primary_color",
+			"options": [
+				{ "color": "#ffd204" },
+				{ "color": "#66cc00" },
+				{ "color": "#6ed961" },
+				{ "color": "#21cbca" },
+				{ "color": "#ee562d" },
+				{ "color": "#7a1805" },
+				{ "color": "#2077bf" },
+				{ "color": "#1B4A1B" }
+			]
+		},
+		{
+			"id": "campaign_secondary_color",
+			"options": [
+				{ "color": "#042233" },
+				{ "color": "#093944" },
+				{ "color": "#074365" }
+			]
+		},
+		{
+			"id": "campaign_header_primary",
+			"options": [
+				{
+					"value": "",
+					"label": "Campaign default"
+				},
+				{
+					"value": "Anton",
+					"label": "Anton"
+				},
+				{
+					"value": "Jost",
+					"label": "Jost"
+				},
+				{
+					"value": "Montserrat",
+					"label": "Montserrat Bold"
+				},
+				{
+					"value": "Montserrat_Light",
+					"label": "Montserrat Light"
+				},
+				{
+					"value": "Sanctuary",
+					"label": "Sanctuary"
+				},
+				{
+					"value": "Kanit",
+					"label": "Kanit Extra Bold"
+				},
+				{
+					"value": "Save the Arctic",
+					"label": "Save the Arctic"
+				}
+			]
+		},
+		{
+			"id": "campaign_header_secondary",
+			"options": [
+				{
+					"value": "monsterrat_semi",
+					"label": "Montserrat Semi Bold"
+				},
+				{
+					"value": "kanit_semi",
+					"label": "Kanit Semi Bold"
+				},
+				{
+					"value": "open_sans",
+					"label": "Open Sans"
+				},
+				{
+					"value": "open_sans_shadows",
+					"label": "Open Sans Shadows"
+				}
+			]
+		},
+		{
+			"id": "campaign_body_font",
+			"options": [
+				{
+					"value": "lora",
+					"label": "Serif"
+				},
+				{
+					"value": "roboto",
+					"label": "Sans Serif"
+				},
+				{
+					"value": "campaign",
+					"label": "Campaign default"
+				}
+			],
+			"default": "lora"
+		},
+		{
+			"id": "campaign_footer_theme",
+			"options": [
+				{
+					"value": "default",
+					"label": "Default"
+				},
+				{
+					"value": "white",
+					"label": "White"
+				}
+			],
+			"default": "default"
+		},
+		{
+			"id": "footer_links_color",
+			"options": [
+				{ "color": "#ffd204" },
+				{ "color": "#66cc00" },
+				{ "color": "#6ed961" },
+				{ "color": "#21cbca" },
+				{ "color": "#ee562d" },
+				{ "color": "#7a1805" },
+				{ "color": "#2077bf" },
+				{ "color": "#1B4A1B" }
+			]
+		}
+	]
+}
