@@ -8,16 +8,17 @@ if (!window.lazyLoad) {
 
 // Search page.
 export const setupSearch = function($) {
-  const $search_form            = $( '#search_form' );
-  const $load_more_button       = $( '.btn-load-more-click-scroll' );
-  let load_more_count           = 0;
-  let current_page              = 1;
-  let total_posts               = 0;
-  let loaded_more               = false;
-  let show_archive_button       = false;
-  let load_archive              = false;
-  let only_archived_loads       = 0;
-  let archive_and_live_loads    = 0;
+  const $search_form         = $( '#search_form' );
+  const $load_more_button    = $( '.btn-load-more-click-scroll' );
+  let load_more_count        = 0;
+  let current_page           = 1;
+  let total_posts            = 0;
+  let loaded_more            = false;
+  let show_archive_button    = false;
+  let load_archive           = false;
+  let only_archived_loads    = 0;
+  let archive_and_live_loads = 0;
+  let numberLastResults;
 
   $( '#search-type button' ).click(function() {
     $( '#search-type button' ).removeClass( 'active' );
@@ -99,8 +100,9 @@ export const setupSearch = function($) {
       total_posts    = $(this).data('total_posts');
       const posts_per_load = $(this).data('posts_per_load');
       const archives_per_load = $(this).data('archives_per_load');
-      const next_page      = current_page + 1;
-      current_page         = next_page;
+      const next_page         = current_page + 1;
+      const lastArchiveResult = $( '.search-result-item-headline.archive' ).last();
+      current_page            = next_page;
       $(this).data( 'current_page', next_page );
 
       let action = load_archive ? 'get_archived_posts' : 'get_paged_posts';
@@ -109,20 +111,28 @@ export const setupSearch = function($) {
         url: localizations.ajaxurl,
         type: 'GET',
         data: {
-          action:                       'get_paged_posts',
-          'search-action':              action,
-          'search_query':               $( '#search_input' ).val().trim(),
-          'total_posts':                total_posts,
-          'archived_loads':             only_archived_loads,
-          'archive_and_live_loads':     archive_and_live_loads,
-          'paged':                      next_page,
-          'query-string':               decodeURIComponent( location.search ).substr( 1 ) // Ignore the ? in the search url (first char).
+          action:                   'get_paged_posts',
+          'search-action':          action,
+          'search_query':           $( '#search_input' ).val().trim(),
+          'total_posts':            total_posts,
+          'archive_and_live_loads': archive_and_live_loads,
+          'paged':                  next_page,
+          'query-string':           decodeURIComponent( location.search ).substr( 1 ), // Ignore the ? in the search url (first char).
+          'last_archive_seen':      lastArchiveResult ? lastArchiveResult.attr( 'href' ) : '',
         },
         dataType: 'html'
       }).done(function ( response ) {
         // Append the response at the bottom of the results and then show it.
         $( '.multiple-search-result .list-unstyled' ).append( response );
-        $( '.row-hidden:last' ).removeClass( 'row-hidden' ).show( 'fast' );
+        const lastResultsWrapper = $( '.row-hidden:last' );
+        let lastResults = lastResultsWrapper.find( '.search-result-list-item' );
+        numberLastResults = lastResults.length;
+
+        lastResultsWrapper.removeClass( 'row-hidden' ).show( 'fast' );
+
+        if ( numberLastResults < posts_per_load ) {
+          hideLoadMore();
+        }
 
         window.lazyLoad.update();
 
@@ -149,7 +159,7 @@ export const setupSearch = function($) {
       const $row = $( '.row-hidden', $load_more_button.closest( '.container' ) );
 
       if ( 1 === $row.length ) {
-        $load_more_button.closest( '.load-more-button-div' ).hide( 'fast' );
+        hideLoadMore();
       }
       $row.first().show( 'fast' ).removeClass( 'row-hidden' );
 
@@ -158,20 +168,16 @@ export const setupSearch = function($) {
   });
 
   $('.toggle-label').off( 'click' ).on( 'click', function() {
-    const $show_archive_toggle = $( '.show-archive-toggle' )[0];
+    const shouldIncludeArchive = $( '.show-archive-toggle' )[0].checked;
 
-    if ( !$show_archive_toggle.checked ) {
-      $( '.toggle-label-include' ).hide();
-      $( '.toggle-label-exclude' ).show();
-
-      load_archive = true;
-    } else {
-      $( '.toggle-label-include' ).show();
-      $( '.toggle-label-exclude' ).hide();
-
-      load_archive = false;
-    }
+    load_archive = !shouldIncludeArchive;
+    $( '.toggle-label-include' ).toggle(shouldIncludeArchive);
+    $( '.toggle-label-exclude' ).toggle(!shouldIncludeArchive);
   });
+
+  const hideLoadMore = () => {
+    $( '.load-more-button-div' ).hide( 'fast' );
+  };
 
   const checkShowLoadArchive = ( current_page = 1 ) => {
 
