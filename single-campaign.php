@@ -20,7 +20,15 @@ $context['post'] = $post;
 
 // Get the cmb2 custom fields data.
 $meta              = $post->custom;
-$campaign_template = $post->campaign_page_template ?? $meta['_campaign_page_template'] ?? null;
+
+if ( $meta['campaign_id'] ) {
+	$theme_meta = get_post_meta( $meta['campaign_id'] );
+} else {
+	$theme_meta = $meta;
+}
+$theme_meta = array_map( 'maybe_unserialize', $meta );
+
+$campaign_template = $theme_meta['campaign_page_template'] ?? $theme_meta['_campaign_page_template'] ?? null;
 
 if ( $campaign_template ) {
 	$context['custom_body_classes'] = 'brown-bg theme-' . $campaign_template;
@@ -29,10 +37,10 @@ if ( $campaign_template ) {
 // Save custom style settings.
 $custom_styles = [];
 
-$custom_styles['nav_type']            = $post->campaign_nav_type;
-$custom_styles['nav_border']          = $post->campaign_nav_border;
-$custom_styles['campaign_logo_color'] = $post->campaign_logo_color ?? 'light';
-$custom_styles['campaign_logo']       = $post->campaign_logo ?? null;
+$custom_styles['nav_type']            = $theme_meta['campaign_nav_type'];
+$custom_styles['nav_border']          = $theme_meta['campaign_nav_border'];
+$custom_styles['campaign_logo_color'] = $theme_meta['campaign_logo_color'] ?? 'light';
+$custom_styles['campaign_logo']       = $theme_meta['campaign_logo'] ?? null;
 
 // Set GTM Data Layer values.
 $post->set_data_layer();
@@ -58,7 +66,7 @@ $context['og_title']                = $post->get_og_title();
 $context['og_description']          = $post->get_og_description();
 $context['og_image_data']           = $post->get_og_image();
 $context['custom_styles']           = $custom_styles;
-$context['css_vars']                = P4_Post_Campaign::css_vars( $post );
+$context['css_vars']                = P4_Post_Campaign::css_vars( $theme_meta );
 
 // P4 Campaign/dataLayer fields.
 $context['cf_campaign_name'] = $meta['p4_campaign_name'] ?? '';

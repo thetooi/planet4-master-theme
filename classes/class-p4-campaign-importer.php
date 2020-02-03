@@ -38,7 +38,7 @@ if ( ! class_exists( 'P4_Campaign_Importer' ) ) {
 		 * @param array   $post Post array.
 		 */
 		public function update_campaign_attachements( $post_id, $original_post_id, $postdata, $post ) {
-			if ( 'campaign' === $post['post_type'] ) {
+			if ( P4_Post_Campaign_Page::POST_TYPE === $post['post_type'] ) {
 				$post_content = $post['post_content'];
 				$filter_data  = [];
 
@@ -187,7 +187,7 @@ if ( ! class_exists( 'P4_Campaign_Importer' ) ) {
 		 * @return array
 		 */
 		public function set_imported_campaigns_as_drafts( $postdata, $post ) {
-			if ( 'campaign' === $post['post_type'] ) {
+			if ( P4_Post_Campaign_Page::POST_TYPE === $post['post_type'] ) {
 				$postdata['post_status'] = 'draft';
 			}
 
