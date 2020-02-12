@@ -170,40 +170,40 @@ if ( ! class_exists( 'P4_Search' ) ) {
 		 * Gets the paged posts that belong to the next page/load and are to be used with the twig template.
 		 */
 		public function get_paged_posts() {
-			if ( wp_doing_ajax() ) {
+			if ( ! wp_doing_ajax() ) {
+				return;
+			}
 
-				$search_action          = filter_input( INPUT_GET, 'search-action', FILTER_SANITIZE_STRING );
-				$paged                  = filter_input( INPUT_GET, 'paged', FILTER_SANITIZE_STRING );
-				$total_posts            = filter_input( INPUT_GET, 'total_posts', FILTER_SANITIZE_STRING );
-				$archive_and_live_loads = filter_input( INPUT_GET, 'archive_and_live_loads', FILTER_SANITIZE_STRING );
-				$last_archive_seen      = filter_input( INPUT_GET, 'last_archive_seen', FILTER_SANITIZE_STRING );
+			$search_action     = filter_input( INPUT_GET, 'search-action', FILTER_SANITIZE_STRING );
+			$paged             = filter_input( INPUT_GET, 'paged', FILTER_SANITIZE_STRING );
+			$total_posts       = filter_input( INPUT_GET, 'total_posts', FILTER_SANITIZE_STRING );
+			$last_archive_seen = filter_input( INPUT_GET, 'last_archive_seen', FILTER_SANITIZE_STRING );
+			$last_live_seen    = filter_input( INPUT_GET, 'last_live_seen', FILTER_SANITIZE_STRING );
 
-				$search_async = new static();
-				$search_async->set_context( $search_async->context );
-				$search_async->search_query = urldecode( filter_input( INPUT_GET, 'search_query', FILTER_SANITIZE_STRING ) );
+			$search_async = new static();
+			$search_async->set_context( $search_async->context );
+			$search_async->search_query = urldecode( filter_input( INPUT_GET, 'search_query', FILTER_SANITIZE_STRING ) );
 
-				// Get the decoded url query string and then use it as key for redis.
-				$query_string_full = urldecode( filter_input( INPUT_SERVER, 'QUERY_STRING', FILTER_SANITIZE_STRING ) );
-				$query_string      = str_replace( '&query-string=', '', strstr( $query_string_full, '&query-string=' ) );
+			// Get the decoded url query string and then use it as key for redis.
+			$query_string = urldecode( filter_input( INPUT_GET, 'query-string', FILTER_SANITIZE_STRING ) );
 
-				$group                      = 'search';
-				$subgroup                   = $search_async->search_query ?: 'all';
-				$search_async->current_page = $paged;
+			$group                      = 'search';
+			$subgroup                   = $search_async->search_query ?: 'all';
+			$search_async->current_page = $paged;
 
-				parse_str( $query_string, $filters_array );
-				$selected_sort    = $filters_array['orderby'] ?? self::DEFAULT_SORT;
-				$selected_filters = $filters_array['f'] ?? [];
-				$filters          = [];
+			parse_str( $query_string, $filters_array );
+			$selected_sort    = $filters_array['orderby'] ?? self::DEFAULT_SORT;
+			$selected_filters = $filters_array['f'] ?? [];
+			$filters          = [];
 
-				// Handle submitted filter options.
-				if ( is_array( $selected_filters ) ) {
-					foreach ( $selected_filters as $type => $filter_type ) {
-						foreach ( $filter_type as $name => $id ) {
-							$filters[ $type ][] = [
-								'id'   => $id,
-								'name' => $name,
-							];
-						}
+			// Handle submitted filter options.
+			if ( is_array( $selected_filters ) ) {
+				foreach ( $selected_filters as $type => $filter_type ) {
+					foreach ( $filter_type as $name => $id ) {
+						$filters[ $type ][] = [
+							'id'   => $id,
+							'name' => $name,
+						];
 					}
 				}
 
@@ -351,65 +351,80 @@ if ( ! class_exists( 'P4_Search' ) ) {
 		 * @return array of archived results.
 		 */
 		protected function get_archived_results( $search_query ) {
-
 			$group           = 'archive-search';
 			$subgroup        = 'all';
 			$cache_key_set   = $this->prepare_keys_for_cache( urldecode( $search_query . '-archived' ), $group, $subgroup );
 			$archive_results = wp_cache_get( $cache_key_set->key, $cache_key_set->group );
 
 			if ( ! $archive_results ) {
+				$archive_search_url = get_option( 'ep_host', false ) . 'archive/page/_search';
+				$domain             = $this->get_domain();
 
-				/**
-				 * Parameters
-				 * q = search query.
-				 * s = site.
-				 * h = hits per site (0 = all).
-				 * n = number of results. defaults to 10, so making it 100 should get enough.
-				 */
-				$archive_url               = "https://archive-it.org/search-master/opensearch?q=$search_query&s=p3-raw.greenpeace.org&h=0&n=100";
-				$archive_response          = wp_remote_get( $archive_url, [ 'timeout' => 100 ] );
-				$xml_archive_response_body = wp_remote_retrieve_body( $archive_response );
-				$response_body             = new SimpleXMLElement( $xml_archive_response_body );
-				$filtered_parsed_results   = $this->get_filtered_parsed_archived_results( $response_body );
+				$search_body = [
+					'query' => [
+						'bool' => [
+							'must'                 => [
+								0 => [
+									'term' => [
+										'domain' => $domain,
+									],
+								],
+							],
+							'should'               => [
+								0 => [
+									'term' => [
+										'title' => $search_query,
+									],
+								],
+								1 => [
+									'term' => [
+										'excerpt' => $search_query,
+									],
+								],
+							],
+							'minimum_should_match' => 1,
+						],
+					],
+				];
 
-				if ( 0 === count( $filtered_parsed_results ) ) {
-					return [];
-				}
+				$archive_response = wp_remote_post(
+					$archive_search_url,
+					[
+						'headers' => [
+							'content-type' => 'application/json',
+						],
+						'body'    => json_encode( $search_body ),
+					]
+				);
 
-				$archive_results = $filtered_parsed_results;
-				wp_cache_add( $cache_key_set->key, $filtered_parsed_results, $cache_key_set->group, self::DEFAULT_CACHE_TTL );
+
+				$archive_results = $this->get_parsed_archived_results( json_decode( $archive_response['body'] ) );
+				wp_cache_add( $cache_key_set->key, $archive_results, $cache_key_set->group, self::DEFAULT_CACHE_TTL );
 			}
+
 			return $archive_results;
 		}
 
 		/**
-		 * Filter archived results by current domain.
+		 * Parses results from elastic search into structure used in template.
 		 *
-		 * @param object $results of all results fetched from archive.
+		 * @param array $results fetched from elastic search.
 		 *
-		 * @return array of archived results filtered by the current site.
+		 * @return array of parsed results.
 		 */
-		protected function get_filtered_parsed_archived_results( $results ) {
-			$domain = $this->get_domain();
-
+		protected function get_parsed_archived_results( $results ) {
+			$parsed_items   = [];
 			$wayback_prefix = 'https://wayback.archive-it.org/' . self::ARCHIVE_COLLECTION . '/';
 
-			$filtered_parsed_items = [];
+			foreach ( $results->hits->hits as $result ) {
+				$parsed_item            = $result->_source;
+				$parsed_item->post_type = 'archive';
+				$parsed_item->link      = $wayback_prefix . $result->_source->link;
 
-			foreach ( $results->channel->item as $item ) {
-				if ( strpos( (string) $item->link, $domain ) !== false ) {
-					$parsed_item            = new stdClass();
-					$parsed_item->title     = (string) $item->title;
-					$parsed_item->link      = $wayback_prefix . ( (string) $item->link );
-					$parsed_item->excerpt   = (string) $item->description;
-					$parsed_item->post_date = (string) $item->date;
-					$parsed_item->post_type = 'archive';
-
-					array_push( $filtered_parsed_items, $parsed_item );
-				}
+				array_push( $parsed_items, $parsed_item );
 			}
 
-			return $filtered_parsed_items;
+			return $parsed_items;
 		}
 
 		/**
