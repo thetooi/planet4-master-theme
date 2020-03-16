@@ -114,6 +114,7 @@ class P4_Master_Site extends TimberSite {
 		add_action( 'after_setup_theme', [ $this, 'add_image_sizes' ] );
 		add_action( 'save_post', [ $this, 'p4_auto_generate_excerpt' ], 10, 2 );
 
+		P4_Search::add_archive_filters();
 		add_action( 'wp_ajax_get_paged_posts', [ 'P4_ElasticSearch', 'get_paged_posts' ] );
 		add_action( 'wp_ajax_nopriv_get_paged_posts', [ 'P4_ElasticSearch', 'get_paged_posts' ] );
 

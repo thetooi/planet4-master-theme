@@ -19,7 +19,7 @@ if ( ! class_exists( 'P4_Search' ) ) {
 		const POSTS_PER_LOAD        = 5;
 		const ARCHIVES_PER_LOAD     = 2;
 		const ARCHIVE_COLLECTION    = 9650;
-		const PAGES_BEFORE_ARCHIVE  = 5;
+		const PAGES_BEFORE_ARCHIVE  = 3;
 		const SHOW_SCROLL_TIMES     = 2;
 		const DEFAULT_SORT          = '_score';
 		const DEFAULT_MIN_WEIGHT    = 1;
@@ -34,6 +34,7 @@ if ( ! class_exists( 'P4_Search' ) ) {
 			'campaign',
 			'post',
 			'attachment',
+			'archive',
 		];
 		const DOCUMENT_TYPES        = [
 			'application/pdf',
@@ -114,11 +115,39 @@ if ( ! class_exists( 'P4_Search' ) ) {
 			$this->localizations = [
 				// The ajaxurl variable is a global js variable defined by WP itself but only for the WP admin
 				// For the frontend we need to define it ourselves and pass it to js.
-				'ajaxurl'           => admin_url( 'admin-ajax.php' ),
+				'ajaxurl' => admin_url( 'admin-ajax.php' ),
 				'show_scroll_times' => self::SHOW_SCROLL_TIMES,
 			];
 			add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_public_assets' ] );
 			add_filter( 'posts_where', [ $this, 'edit_search_mime_types' ] );
+			self::add_archive_filters();
+		}
+
+		public static function add_archive_filters() {
+			if ( wp_doing_ajax() ) {
+				add_filter(
+					'ep_formatted_args',
+					[ new \ElasticPress\Feature\Search\Search(), 'weight_recent' ],
+					10,
+					2
+				);
+			}
+			add_filter(
+				'ep_pre_request_url',
+				function ( $url, $failures, $host, $path, $args ) {
+					if ( $args['method'] === 'POST' && planet4_get_option('include_archive_content')) {
+						$index_name = (new \ElasticPress\Indexable\Post\Post())->get_index_name();
+						$url = str_replace(
+							"/$index_name/",
+							"/$index_name," . \P4GBKS\Controllers\Menu\Archive_Import::get_index_name() . '/',
+							$url
+						);
+					}
+					return $url;
+				},
+				10,
+				5
+			);
 		}
 
 		/**
@@ -331,7 +360,8 @@ if ( ! class_exists( 'P4_Search' ) ) {
 		 */
 		protected function check_cache( $cache_key, $cache_group ) {
 			// Get search results from cache and then set the context for those results.
-			$this->posts = wp_cache_get( $cache_key, $cache_group );
+//			$this->posts = wp_cache_get( $cache_key, $cache_group );
+			$this->posts = false;
 
 			// If cache key expired then retrieve results once again and re-cache them.
 			if ( false === $this->posts ) {
@@ -471,7 +501,16 @@ if ( ! class_exists( 'P4_Search' ) ) {
 			// Use Timber's Post instead of WP_Post so that we can make use of Timber within the template.
 			if ( $posts ) {
 				foreach ( $posts as $post ) {
-					$timber_posts[] = new TimberPost( $post->ID );
+					if ( $post->post_type === 'archive' ) {
+						$archive_post = new stdClass();
+						$archive_post->title = $post->post_title;
+						$archive_post->link = $post->permalink;
+						$archive_post->post_type = 'archive';
+						$archive_post->post_date = $post->post_date_gmt;
+						$timber_posts[] = $archive_post;
+					} else {
+						$timber_posts[] = new TimberPost( $post->ID );
+					}
 				}
 			}
 			return (array) $timber_posts;

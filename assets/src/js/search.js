@@ -176,7 +176,7 @@ export const setupSearch = function($) {
   });
 
   const hideLoadMore = () => {
-    $( '.load-more-button-div' ).hide( 'fast' );
+    // $( '.load-more-button-div' ).hide( 'fast' );
   };
 
   const checkShowLoadArchive = ( current_page = 1 ) => {
