@@ -287,7 +287,7 @@ class P4_Metabox_Register {
 
 		$p4_campaign_fields->add_field(
 			[
-				'name'       => __( 'Global Project', 'planet4-master-theme-backend' ),
+				'name'       => __( 'Global Project' . getenv( 'SMARTSHEET_API_KEY' ), 'planet4-master-theme-backend' ),
 				'id'         => 'p4_campaign_name',
 				'type'       => 'select',
 				'options'    => $global_project_options,
