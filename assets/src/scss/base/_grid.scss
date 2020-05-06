@@ -1,6 +1,6 @@
 $grid-breakpoints: (
   xs: 0,
-  sm: 576px,
+  sm: 600px,
   md: 768px,
   lg: 992px,
   xl: 1230px
@@ -8,10 +8,10 @@ $grid-breakpoints: (
 
 // Width of .container
 $container-max-widths: (
-  sm: 576px,
+  sm: 592px,
   md: 720px,
   lg: 960px,
-  xl: 1136px
+  xl: 1152px
 );
 
 $grid-columns: 12;

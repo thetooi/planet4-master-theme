@@ -25,8 +25,14 @@
 	</div>
 
 	<div class="page-template">
-		{% for name, block in blocks %}
-			{{ fn('do_blocks', block )|raw }}
-		{% endfor %}
+		<div class="container">
+			<div class="row">
+				<div class="col">
+					{% for name, block in blocks %}
+						{{ fn('do_blocks', block )|raw }}
+					{% endfor %}
+				</div>
+			</div>
+		</div>
 	</div>
 {% endblock %}
