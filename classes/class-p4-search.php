@@ -103,7 +103,9 @@ if ( ! class_exists( 'P4_Search' ) ) {
 		/**
 		 * P4_Search constructor.
 		 */
-		public function __construct() {}
+		public function __construct() {
+			die( 'You shall not search!' );
+		}
 
 		/**
 		 * Initialize the class. Hook necessary actions and filters.
