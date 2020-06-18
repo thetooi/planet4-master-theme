@@ -5,10 +5,15 @@
  * @package P4MT
  */
 
+namespace P4\MasterTheme;
+
+use P4_Analytics_Values;
+use P4_Post_Campaign;
+
 /**
  * Class P4_Metabox_Register
  */
-class P4_Metabox_Register {
+class MetaboxRegister {
 
 	/**
 	 * The maximum number of take action pages to show in dropdown.
@@ -430,3 +435,5 @@ class P4_Metabox_Register {
 		return $options_array;
 	}
 }
+
+class_alias( MetaboxRegister::class, 'P4_Metabox_Register' );
