@@ -5,21 +5,29 @@
  * @package P4MT
  */
 
-use P4\MasterTheme\Activator;
-use P4\MasterTheme\CampaignExporter;
-use P4\MasterTheme\MasterSite;
-use P4\MasterTheme\MetaboxRegister;
+namespace P4\MasterTheme;
+
+use P4_Campaign_Importer;
+use P4_Campaigns;
+use P4_Control_Panel;
+use P4_Cookies;
+use P4_Custom_Taxonomy;
+use P4_Dev_Report;
+use P4_Post_Archive;
+use P4_Post_Campaign;
+use P4_Post_Report_Controller;
+use P4_Settings;
 use WP_CLI;
 
 /**
  * Class P4_Loader.
  * Loads all necessary classes for Planet4 Master Theme.
  */
-final class P4_Loader {
+final class Loader {
 	/**
 	 * A static instance of Loader.
 	 *
-	 * @var P4_Loader $instance
+	 * @var Loader $instance
 	 */
 	private static $instance;
 	/**
@@ -41,9 +49,9 @@ final class P4_Loader {
 	 *
 	 * @param array $services The Controller services to inject.
 	 *
-	 * @return P4_Loader
+	 * @return Loader
 	 */
-	public static function get_instance( $services = [] ) : P4_Loader {
+	public static function get_instance( $services = [] ) : Loader {
 		if ( ! isset( self::$instance ) ) {
 			self::$instance = new self( $services );
 		}
@@ -215,3 +223,5 @@ final class P4_Loader {
 		return false;
 	}
 }
+
+class_alias( Loader::class, 'P4_Loader' );
