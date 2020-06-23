@@ -63,7 +63,8 @@ final class P4_Loader {
 	 * Load required files.
 	 */
 	private function load_files() {
-		require_once __DIR__ . '/../vendor/autoload.php';
+//		require_once __DIR__ . '/../vendor/autoload.php';
+		require_once __DIR__ . '/../../../../../vendor/autoload.php';
 		try {
 			// Class names need to be prefixed with P4 and should use capitalized words separated by underscores. Any acronyms should be all upper case.
 			spl_autoload_register(
