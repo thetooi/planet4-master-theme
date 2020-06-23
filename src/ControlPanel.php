@@ -5,14 +5,17 @@
  * @package P4MT
  */
 
+namespace P4\MasterTheme;
+
 use P4GEN\Controllers\Ensapi_Controller as ENS_API;
 use ElasticPress\Elasticsearch as ES;
+use WP_Error;
 
 
 /**
  * Class P4_Control_Panel
  */
-class P4_Control_Panel {
+class ControlPanel {
 
 	/**
 	 * P4_Control_Panel constructor.
@@ -289,3 +292,5 @@ class P4_Control_Panel {
 		wp_enqueue_script( 'dashboard-script', "$theme_dir/admin/js/dashboard.js", [ 'jquery' ], '0.2.0', true );
 	}
 }
+
+class_alias( ControlPanel::class, 'P4_Control_Panel' );
