@@ -1031,3 +1031,6 @@ class MasterSite extends TimberSite {
 		return $content;
 	}
 }
+
+class_alias( MasterSite::class, 'P4_Master_Site' );
+
