@@ -57,4 +57,36 @@ class P4MasterSite extends TestCase {
 
 		$this->assertEquals( $expected, $p4->make_content_images_lazyload( $content ) );
 	}
+
+	/**
+	 * Test cases for cloudflare
+	 */
+	public function cloudflareImageProvider(): array {
+		return [
+			[	
+				['path/to/my/image.jpg', '', ''],
+				'/cdn-cgi/image/format=auto,fit=contain/path/to/my/image.jpg'
+			],
+			[	
+				['path/to/my/image.jpg', '', 'optionA=valA'],
+				'/cdn-cgi/image/format=auto,optionA=valA,fit=contain/path/to/my/image.jpg'
+			],
+		];
+	}
+
+	/**
+	 * @dataProvider cloudflareImageProvider
+	 * 
+	 * @param array $params    Parameters for img_to_cloudflare()
+	 * @param string $expected Resulting URL expected
+	 */
+	public function testImgToCloudflare(array $params, string $expected): void {
+		/** @var MasterSite $p4 */
+		$p4 = $this->getMockBuilder( MasterSite::class )
+		->disableOriginalConstructor()
+		->setMethodsExcept( [ 'img_to_cloudflare' ] )
+		->getMock();
+
+		$this->assertEquals( $expected, $p4->img_to_cloudflare( ...$params ) );
+	}
 }
