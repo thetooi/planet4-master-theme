@@ -9,24 +9,9 @@ const cssVariables = require( 'postcss-css-variables-extract' );
 const fs = require( 'fs' );
 const collectVarUsages = require( 'postcss-css-variables-extract/lib/scss-var-usages' );
 const mergeVarUsages = require( 'postcss-css-variables-extract/lib/merge-var-usages' );
+const dashDash = require('@inwerpsel/dash-dash');
 
 const allCssVars = {};
-const icons_config = {
-  shape: {
-    dimension: {
-      maxWidth: 64,
-      maxHeight: 64
-    },
-    spacing: {
-      padding: 0,
-      box: 'content'
-    }
-  },
-  mode: {
-    inline: true,
-    symbol: true
-  }
-};
 
 module.exports = {
   ...defaultConfig,
@@ -60,8 +45,9 @@ module.exports = {
             options: {
               ident: 'postcss',
               plugins: () => [
-                 cssVariables( { preserve: true, exportVarUsagesTo: allCssVars } ),
-                 require('autoprefixer'),
+                dashDash(),
+                cssVariables({ preserve: true, exportVarUsagesTo: allCssVars }),
+                require('autoprefixer'),
               ],
               sourceMap: true,
             }
@@ -127,13 +113,11 @@ module.exports = {
           // we use a separate scripts which loops through all scss files. Only variables that are in the final css
           // are included.
           const scssUsages = collectVarUsages( './assets/src' );
-          // console.log( 'CSS', allCssVars );
-          // console.log( 'sass', scssUsages );
           const mergedUsages = mergeVarUsages( allCssVars, scssUsages );
           fs.writeFile(
             './assets/build/css_vars_merged.json',
             JSON.stringify( mergedUsages, null, 2 ),
-            err => console.log( err )
+            console.log
           );
         } );
       }
