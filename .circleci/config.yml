@@ -117,7 +117,7 @@ jobs:
             MASTER_THEME_BRANCH=dev-${BRANCH}#${CIRCLE_SHA1} \
             MERGE_SOURCE=git@github.com:greenpeace/planet4-base-fork.git \
             MERGE_REF=develop \
-            make ci
+            make
       - run:
           name: Test - Clone planet4-docker-compose
           command: |
