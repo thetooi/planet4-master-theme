@@ -110,7 +110,7 @@ jobs:
           working_directory: /home/circleci
           command: |
             echo "Master theme branch is ${CIRCLE_BRANCH}"
-            MASTER_THEME_BRANCH=dev-${CIRCLE_BRANCH} MERGE_SOURCE=git@github.com:greenpeace/planet4-base-fork.git MERGE_REF=develop make
+            MASTER_THEME_BRANCH=dev-${CIRCLE_BRANCH} MERGE_SOURCE=git@github.com:greenpeace/planet4-base-fork.git MERGE_REF=test/parralelism make
       - run:
           name: Test - Clone planet4-docker-compose
           command: |
@@ -122,8 +122,7 @@ jobs:
             export APP_IMAGE=gcr.io/planet-4-151612/planet4-base-app:${BUILD_TAG}
             export OPENRESTY_IMAGE=gcr.io/planet-4-151612/planet4-base-openresty:${BUILD_TAG}
             make -C planet4-docker-compose ci install-codeception test-env-info
-            docker-compose exec php-fpm find tests/acceptance -type f -name "*.php" -or -name "*.feature" | circleci tests split > tests_list
-            for file in $(cat tests_list); do docker-compose exec php-fpm tests/vendor/bin/codecept run $file --no-redirect --xml=junit.xml --html --coverage --coverage-html coverage_acceptance; done
+            docker-compose exec php-fpm tests/vendor/bin/codecept run acceptance -g $(echo "columns covers gallery error frontend backend useraction" | circleci tests split) --no-redirect --xml=junit.xml --html --coverage --coverage-html coverage_acceptance
       - run:
           name: Test - Extract test artifacts
           when: always
