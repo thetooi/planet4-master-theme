@@ -27,5 +27,9 @@ class Activator {
 	 */
 	public static function run(): void {
 		Campaigner::register_role_and_add_capabilities();
+		(new MigrationRunner())->run(
+			new MigrationList(),
+			MigrationLog::from_wp_options()
+		);
 	}
 }
