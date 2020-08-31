@@ -48,9 +48,9 @@ class Activator {
 
 		// Loop migrations and run those that haven't run yet.
 		foreach ( $migrations as $migration ) {
-			if ( $log->already_ran( $migration::get_id() ) ) {
-				continue;
-			}
+//			if ( $log->already_ran( $migration::get_id() ) ) {
+//				continue;
+//			}
 
 			$migration::run();
 			$log->add( $migration::get_id() );

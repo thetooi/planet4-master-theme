@@ -17,6 +17,8 @@ class M001EnableEnFormFeature extends Migration {
 	public static function run(): void {
 		$settings = get_option( Settings::KEY, [] );
 
+		echo X\fail();
+
 		$settings[ Features::ENGAGING_NETWORKS ] = 'on';
 		update_option( Settings::KEY, $settings );
 	}
