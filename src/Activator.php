@@ -27,17 +27,23 @@ class Activator {
 	/**
 	 * Run activation functions.
 	 */
-	public static function run(): void {
+	public static function run($previous_theme = null ): void {
 		Campaigner::register_role_and_add_capabilities();
-		self::do_migrations();
+		self::do_migrations($previous_theme);
 	}
 
 	/**
 	 * Run any new migrations and record them in the log.
+	 *
+	 * @param null $previous_theme
 	 */
-	private static function do_migrations(): void {
+	private static function do_migrations($previous_theme = null ): void {
 		// Fetch migration ids that have run from WP option.
 		$log = MigrationLog::from_wp_options();
+
+		if ( $previous_theme ) {
+			return;
+		}
 
 		/**
 		 * @var Migration[] $migrations
