@@ -86,7 +86,7 @@ job-references:
 
 commands:
   install-instance:
-    steps:  
+    steps:
       - setup_remote_docker:
           docker_layer_caching: true
       - run:
@@ -116,7 +116,7 @@ commands:
       extract-command:
         type: string
     steps:
-      - run: 
+      - run:
           name: << parameters.test-name >>
           command: << parameters.test-command >>
       - run:
@@ -150,6 +150,7 @@ jobs:
       - image: *mysql_image
 
   acceptance-tests:
+    resource_class: large
     <<: *p4_instance_conf
     steps:
       - install-instance
@@ -167,6 +168,7 @@ jobs:
             make -C planet4-docker-compose ci-extract-artifacts
 
   a11y-tests:
+    resource_class: large
     <<: *p4_instance_conf
     steps:
       - install-instance
