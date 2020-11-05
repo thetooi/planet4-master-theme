@@ -191,7 +191,7 @@ class MasterSite extends TimberSite {
 		add_action( 'init', [ $this, 'login_redirect' ], 1 );
 		add_filter( 'attachment_fields_to_edit', [ $this, 'add_image_attachment_fields_to_edit' ], 10, 2 );
 		add_filter( 'attachment_fields_to_save', [ $this, 'add_image_attachment_fields_to_save' ], 10, 2 );
-		add_action( 'init', [ $this, 'p4_register_core_image_block' ] );
+		add_filter( 'register_block_type_args', [ $this, 'register_core_blocks_callback' ] );
 		add_action( 'admin_notices', [ $this, 'show_dashboard_notice' ] );
 		add_action( 'wp_ajax_dismiss_dashboard_notice', [ $this, 'dismiss_dashboard_notice' ] );
 		add_filter( 'timber/twig', [ $this, 'p4_optimize_img_url' ] );
@@ -1095,13 +1095,17 @@ class MasterSite extends TimberSite {
 	}
 
 	/**
-	 * Add callback function to Gutenberg core/image block.
+	 * Alter block attributes before registration
+	 *
+	 * @param array $args Block properties.
+	 * @see WP_Block_Type::set_props()
 	 */
-	public function p4_register_core_image_block() {
-		register_block_type(
-			'core/image',
-			[ 'render_callback' => [ $this, 'p4_core_image_block_render' ] ]
-		);
+	public function register_core_blocks_callback( array $args ): array {
+		if ( 'core/image' === $args['name'] ) {
+			$args['render_callback'] = [ $this, 'p4_core_image_block_render' ];
+		}
+
+		return $args;
 	}
 
 	/**
